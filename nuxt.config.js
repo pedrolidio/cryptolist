@@ -1,6 +1,6 @@
 export default {
   // Disable server-side rendering: https://go.nuxtjs.dev/ssr-mode
-  ssr: false,
+  ssr: true,
 
   // Global page headers: https://go.nuxtjs.dev/config-head
   head: {
@@ -17,6 +17,10 @@ export default {
     link: [
       { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
     ]
+  },
+
+  privateRuntimeConfig: {
+    coinApiKey: process.env.COIN_API_KEY
   },
 
   // Global CSS: https://go.nuxtjs.dev/config-css
@@ -47,8 +51,8 @@ export default {
 
   axios: {
     // Sandbox
-    baseURL: 'https://rest-sandbox.coinapi.io'
+    // baseURL: process.env.COIN_API_SANDBOX_URL
     // Production URL
-    // baseURL: 'https://rest.coinapi.io'
+    baseURL: process.env.COIN_API_URL
   }
 }
