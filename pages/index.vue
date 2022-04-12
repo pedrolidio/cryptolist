@@ -1,21 +1,25 @@
 <template>
-  <div class="m-10">
-      <form>
-          <v-select :options="options" v-model="search" placeholder="Search cryptocurrency..."></v-select>
-          <button type="submit" v-on:click.prevent.stop="addCrypto()">Add</button>
-      </form>
-      Watchlist:<br>
-      <ul>
-          <li v-for="asset in assets" :key="asset.asset_id">
-              <br>
-              <div v-if="selectedAssets.includes(asset.asset_id)">
-                  {{ asset.name }} <br>
-                  {{ asset.asset_id }} <br>
-                  {{ asset.price_usd }} <br>
-              </div>
-          </li>
-      </ul>
-  </div>
+    <div class="flex flex-col container mx-auto bg-gray-100 p-4 sm:rounded sm:my-10 border shadow-lg">
+        <form class="mb-4 flex flex-row">
+            <v-select class="w-full bg-white rounded shadow-md" :options="options" v-model="search" placeholder="Search cryptocurrency..."></v-select>
+            <button class="rounded bg-blue-400 px-4 py-1 ml-2 text-white shadow-md" type="submit" v-on:click.prevent.stop="addCrypto()">Add</button>
+        </form>
+        <button class="rounded bg-blue-400 px-4 py-1 text-white shadow-md" @click="$fetch">Force Refetch</button>
+        <br>
+        <p class="text-xl">
+            Watchlist: (Last update: {{lastUpdate}})
+        </p>
+        <br>
+        <ul class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+            <li v-for="asset in selectedAssetsData" :key="asset.asset_id">
+                <div class="bg-white border shadow-md p-2 h-20 w-1200 rounded">
+                    {{ asset.name }} - {{ asset.asset_id }} <br>
+                    {{ asset.asset_id }}/USD: {{ asset.price_usd.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) }} <br>
+                </div>
+            </li>
+        </ul>
+    </div>
+
 </template>
 
 <script>
@@ -28,56 +32,23 @@
     export default {
         name: '',
         data() {
+            const counter = 0;
             const search = "";
             const selectedAssets = [ "BTC" ];
-            const assets = [
-                { 
-                    asset_id: "BTC",
-		            name: "Bitcoin",
-                    type_is_crypto: 1,
-                    price_usd: 43379.5815368347054717827221,
-                },
-                { 
-                    asset_id: "LTC",
-		            name: "Litecoin",
-                    type_is_crypto: 1,
-                    price_usd: 112.05786531075521143207474033,
-                },
-                { 
-                    asset_id: "XRP",
-		            name: "Ripple",
-                    type_is_crypto: 1,
-                    price_usd: 0.7702436494715246747879875251,
-                },
-                { 
-                    asset_id: "DOGE",
-		            name: "DogeCoin",
-                    type_is_crypto: 1,
-                    price_usd: 0.1430201111305217207456219165,
-                },
-                {
-                    asset_id: "USD",
-		            name: "US Dollar",
-		            type_is_crypto: 0,
-                    price_usd: 1,
-                }
-            ];
-
+            const selectedAssetsData = [];
+            const assets = [];
+            const dateTime= new Date();
+            const lastUpdate = dateTime.toLocaleTimeString();
             const options = [];
-
-            assets.forEach((asset) => {
-                if (asset.type_is_crypto === 1)
-                    options.push({
-                        label: `${asset.name} - ${asset.asset_id}`,
-                        asset_id: asset.asset_id,
-                    });
-            });
             
             return {
                 search,
                 selectedAssets,
+                selectedAssetsData,
                 assets,
-                options
+                options,
+                counter,
+                lastUpdate
             };
         },
         methods: {
@@ -90,35 +61,62 @@
 
                 else {
                     this.selectedAssets.push(this.search.asset_id);
+                    this.updateData();
                     alert(`"${this.search.label}" added to watchlist!`);
                     this.search = "";
                 }
+            },
+            updateData() {
+                this.selectedAssetsData = this.assets.filter((asset)=>{return this.selectedAssets.includes(asset.asset_id)}, this);
+            },
+            updateOptions() {
+                if(this.assets != undefined)
+                    for(var i = 0; i < this.assets.length; i++)
+                    {
+                        if (this.assets[i].type_is_crypto === 1 && !this.options.some(option => option.asset_id === this.assets[i].asset_id))
+                            this.options.push({
+                                label: `${this.assets[i].name} - ${this.assets[i].asset_id}`,
+                                asset_id: this.assets[i].asset_id,
+                            });
+                    }
+            },
+            updateTime() {
+                const dateTime= new Date();
+                this.lastUpdate = dateTime.toLocaleTimeString();
             }
         },
-        //async asyncData({ $axios, $config, $data }) {
-            // Pega informações sobre o BTC apenas
-            /*const selectedAssets = await $axios.$get('v1/assets/BTC', {
-                headers: {
-                    "X-CoinAPI-Key": $config.coinApiKey
-                }
-            });*/
-        /*
-            const selectedAssets = await $axios.$get('v1/assets', {
+        async mounted() {
+            this.updateData();
+            this.updateOptions();
+
+            /*setInterval(async (c) => {
+                c.$fetch()
+            }, 30000, this);*/
+        },
+        /*async asyncData({ $axios, $config, $data }) {
+            const assets = await $axios.$get('v1/assets/BTC', {
                 headers: {
                     "X-CoinAPI-Key": $config.coinApiKey
                 }
             });
-            
+
             return {
-                selectedAssets,
+                assets,
             };
         },*/
-        /*async fetch() {
-            this.selectedAssets = await this.$axios.$get('v1/assets', {
+        async fetch() {
+            this.assets = await this.$axios.$get('v1/assets', {
                 headers: {
                     "X-CoinAPI-Key": this.$config.coinApiKey
                 }
             });
-        },*/
+            this.updateData();
+            this.updateOptions();
+            this.updateTime();
+        },
     }
 </script>
+
+<style>
+    
+</style>
